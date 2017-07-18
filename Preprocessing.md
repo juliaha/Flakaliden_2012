@@ -176,7 +176,7 @@ filter_alignment.py -o pynast_aligned_seqs/ -i pynast_aligned_seqs/16S_v_nochime
 make_phylogeny.py -i pynast_aligned_seqs/16S_v_nochimera_aligned_pfiltered.fasta -o pynast_aligned_seqs/rep_set.tre
 ```
 
-##### No. samples: 333 (including each three mock, negative water control, ecoli culture samples)
+##### No. samples: 333 (including each three mock, negative water control, E.coli culture samples)
 ##### No. observations: 22755
 ##### Total read count: 22673362
 
