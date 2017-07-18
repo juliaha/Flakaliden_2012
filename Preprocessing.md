@@ -186,12 +186,14 @@ make_phylogeny.py -i pynast_aligned_seqs/16S_v_nochimera_aligned_pfiltered.fasta
 ```
 filter_otus_per_sample.py -i ITS1_v_.biom -o otu_v_10.biom -n 11
 ```
+
 #### ITS1:
 ```
 biom add-metadata -i otu_v_10.biom --observation-metadata-fp v_nochimera_taxonomy/ITS1_v_nochimera_tax_assignments.txt -o otu_table_v_10_tax.biom --sc-separated taxonomy --observation-header OTUID,taxonomy 
 ```
 ##### No. observations: 2630
 ##### Total read count: 17263282
+
 
 #### 16S:
 ```
@@ -203,6 +205,7 @@ filter_otus_from_otu_table.py -i 16S_otu_table_v_10_tax.biom -o 16S_otu_pynast.b
 ##### No. observations: 7739
 ##### Total read count: 20446149
 
+
 #### ITS1 - Remove reads with an assignments other than the kingdom fungi and reads without taxonomic assignment:
 ```
 filter_taxa_from_otu_table.py -i otu_v_10.biom -o otu_v_10_2.biom -n k__Protista 
@@ -211,6 +214,7 @@ filter_taxa_from_otu_table.py -i otu_v_10_2.biom -o otu_v_10_3.biom -n "No blast
 ```
 ##### No. observations: 1867
 ##### Total read count: 15276438
+
 
 #### 16S - Remove plant organellar and Archaea sequences and reads without taxonomic assignment:
 ```
@@ -254,37 +258,40 @@ filter_samples_from_otu_table.py -i otu_v_10_3.biom -o root_v_10.biom -m all_tis
 ##### No. observations: 691
 ##### Total read count: 6112784
 
-##### 16S Soil:
-##### No. observations: 5331
-##### Total read count: 7040923
+
 
 ##### 16S Needle:
 ##### No. observations: 1009
 ##### Total read count: 1202870
 
+##### 16S Soil:
+##### No. observations: 5331
+##### Total read count: 7040923
+
 ##### 16S Root:
 ##### No. observations: 3891
 ##### Total read count: 7946020
 
-### Restrict to 0.005% abundance per sample type:
-#### For ITS1 needles (at least 151 reads of 3036165)
-#### For ITS1 soil (at least 298 reads of 5968902)
-#### For ITS1 roots (at least 305 reads of 6112784)
+
+### Restrict to 0.005 % abundance per sample type:
+##### For ITS1 needles (at least 151 reads of 3036165)
+##### For ITS1 soil (at least 298 reads of 5968902)
+##### For ITS1 roots (at least 305 reads of 6112784)
 ```
 filter_otus_from_otu_table.py -i #tissue#_v_10_1.biom -o #tissue#_v_10_000005.biom --min_count_fraction 0.00005
 ```
+##### Needle ITS1 
+##### No. observations: 407
+##### Total read count: 3001175
 
 ##### Soil ITS1 
 ##### No. observations: 360
 ##### Total read count: 5930724 
 
-##### Needle ITS1 
-##### No. observations: 407
-##### Total read count: 3001175
-
 ##### Root ITS1 
 ##### No.  observations: 311
 ##### Total read count: 6081910
+
 
 ##### 16S soil:
 ##### No. observations: 1579
@@ -297,6 +304,7 @@ filter_otus_from_otu_table.py -i #tissue#_v_10_1.biom -o #tissue#_v_10_000005.bi
 ##### 16S Root:
 ##### No. observations: 1240
 ##### Total read count: 7704727
+
 
 ### Combine technical replicates:
 ```
