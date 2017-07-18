@@ -20,7 +20,7 @@ split_libraries_fastq.py -o mapping_1 -i R1.fastq -b I1.fastq --rev_comp_mapping
 split_libraries_fastq.py -o mapping_2 -i R2.fastq -b I1.fastq --rev_comp_mapping_barcodes -m map _1.txt --store_demultiplexed_fastq
 ```
 
-### sort the read files to have the same order with a custom script:
+### Sort the read files to have the same order with a custom script:
 ```
 ln -s mapping_1/seqs.fastq only_R1.fastq 
 
@@ -96,7 +96,7 @@ fix_ID.py corrected_tmp.fna
 ```
 
 ### The preprocessing was performed separately for each sample type (needles, roots, soil) for 16S and ITS1. 
-### At this point all non experiment related samples (mock community, extraction and amplification controls) are removed and the demultiplexed files get merged for taxonomic assignment and clustering (ITS_all.fna/16S_all.fna). consists of 23.737.923 reads.
+### At this point all non experiment related samples (mock community, extraction and amplification controls) are removed and the demultiplexed files get merged for taxonomic assignment and clustering (ITS_all.fna/16S_all.fna). 
 
 #### Only ITS1 - Non-fungal and chimeric sequences are identified using ITSx (Version 1.0) and filtered from the file:
 ```
@@ -114,43 +114,59 @@ grep "^>" all_ITS1.fasta | sed -e 's/>//g;s/ /\t/g' | cut -f 1 > all_ITS1_header
 filter_fasta.py -f ITS_all_nochimera_2.fna -o ITS_all_nochimera_3.fna -s all_ITS1_header.txt -n 
 ```
 
-#### Using ITS1F-ITS2 primers and reads of the ~length of 250bp, reads should contain parts of the conservative SSU, partial or full ITS1 region and a partial 5.8S region. The length of the conservative SSU was in all reads 46bp and was removed from all reads, before merging with the clean ITS1 region reads:
-
+#### Using ITS1F-ITS2 primers and reads of the ~length of 250bp, reads should contain parts of the conservative SSU, partial or full ITS1 region and a partial 5.8S region. The length of the conservative SSU was in all reads 46bp and was removed from all reads, before merging with the clean ITS1 region reads from the previous step:
+```
 awk '/^#/ {next} /^>/ { print $0 } /^[^>]/ { print substr($0, 47, length($0) - 46) }' ITS_all_nochimera_3.fna > ITS_all_nochimera_trim.fna
 
 cat split_all/all_ITS1.fasta ITS_all_nochimera_trim.fna > ITS_all_ITS1.fna
+```
 
-16s and ITS1 - clustering with vsearch; activate vsearch
-First dereplication of reads:
+## 16s and ITS1 - clustering with VSEARCH (Version 1.10.2) 
+### First dereplication of reads:
+```
 vsearch --derep_fulllength ITS_all_ITS1.fna --output derep_ITS1.fa --sizeout &
+```
 
-size sorting (removes singletons):
+### Size sorting (removes singletons):
+```
 vsearch --sortbysize derep_ITS1.fa --output sorted_ITS1.fa --minsize 2 --sizein --relabel OUT
+```
 
-cluster at 95% (ITS1)/ 97% (16S):
+### Cluster at 95% (ITS1)/ 97% (16S):
+```
 vsearch --cluster_size sorted_ITS1.fa --id 0.95 --strand both --centroids ITS1_centroids.fa --relabel OTU_ --sizeout --uc ITS1_centroids.uc
+```
 
-perform another chimera checking de novo:
+### Perform another chimera checking (de novo):
+```
 vsearch --uchime_denovo ITS1_centroids.fa --nonchimera ITS1_v_nochimera.fa --chimeras ITS1_v_chimera.fa
+```
 
-populate clusters 0.95 ITS1/ 0.97 16S:
+### Populate clusters (--id 0.95 ITS1/ 0.97 16S):
+```
 vsearch --usearch_global ITS_all_ITS1.fna --db ITS1_v_nochimera.fa --id 0.95 --strand both --uc ITS1_v_.uc
+```
 
-transform into .txt OTU table using script from here https://github.com/leffj/helper-code-for-uparse/blob/master/create_otu_table_from_uc_file.py
-
+### Transform into OTU table (tab delimited) using script from here https://github.com/leffj/helper-code-for-uparse/blob/master/create_otu_table_from_uc_file.py:
+```
 create_otu_table_from_uc_file.py -i ITS1_v_.uc -o ITS1_v_.txt
+```
 
-Taxonomy assignment using blast (2.2.26) and QIIME and unite database files
+### Taxonomy assignment using BLAST (2.2.26) and QIIME and UNITE (Version 2016_01_31)/ SILVA (Version 119) database files:
+```
 biom convert --table-type="OTU table" -i ITS1_v_.txt -o ITS1_v_.biom --to-json 
+```
 
-ITS1:
+#### ITS1:
+```
 parallel_assign_taxonomy_blast.py -i ITS1_v_nochimera.fa -o v_nochimera_taxonomy -T --jobs_to_start 10 --reference_seqs_fp qiime_databases/unite/v9/sh_refs_qiime_ver7_dynamic_31.01.2016.fasta --id_to_taxonomy_fp qiime_databases/unite/v9/sh_taxonomy_qiime_ver7_dynamic_31.01.2016.txt 
+```
+##### No. samples: 327 (including three mock community samples)
+##### No. observations: 5166
+##### Total read count: 17565367
 
-Num samples: 327
-Num observations: 5166
-Total count: 17565367
-
-16S:
+#### 16S:
+```
 assign_taxonomy.py -i 16S_v_nochimera.fa -o rdp_assigned_taxonomy -m rdp --rdp_max_memory 20000 --reference_seqs_fp qiime_databases/silva/Silva_119/Silva119_release/rep_set/97/Silva_119_rep_set97.fna --id_to_taxonomy_fp qiime_databases/silva/Silva_119/Silva119_release/taxonomy/97/taxonomy_97_7_levels.txt 
 
 parallel_align_seqs_pynast.py -i 16S_v_nochimera.fa --template_fp qiime_databases/silva/Silva_119/Silva119_release/core_alignment/core_Silva119_alignment.fna --min_percent_id 0.60 -o pynast_aligned_seqs -T --jobs_to_start 4
@@ -158,74 +174,89 @@ parallel_align_seqs_pynast.py -i 16S_v_nochimera.fa --template_fp qiime_database
 filter_alignment.py -o pynast_aligned_seqs/ -i pynast_aligned_seqs/16S_v_nochimera_aligned.fasta 
 
 make_phylogeny.py -i pynast_aligned_seqs/16S_v_nochimera_aligned_pfiltered.fasta -o pynast_aligned_seqs/rep_set.tre
+```
 
-Num samples: 333 (including 3 mock, negative water control, pure ecoli culture)
-Num observations: 22755
-Total count: 22673362
+##### No. samples: 333 (including each three mock, negative water control, ecoli culture samples)
+##### No. observations: 22755
+##### Total read count: 22673362
 
 
 
-ITS1 and 16S - Remove every otu with counts less than or with 10 reads in every out using the script filter_otus_per_sample.py (https://gist.github.com/adamrp/7591573)
-
+### ITS1 and 16S - Remove every otu with counts less than or with 10 reads in every out using the script filter_otus_per_sample.py (https://gist.github.com/adamrp/7591573):
+```
 filter_otus_per_sample.py -i ITS1_v_.biom -o otu_v_10.biom -n 11
-
-ITS1:
+```
+#### ITS1:
+```
 biom add-metadata -i otu_v_10.biom --observation-metadata-fp v_nochimera_taxonomy/ITS1_v_nochimera_tax_assignments.txt -o otu_table_v_10_tax.biom --sc-separated taxonomy --observation-header OTUID,taxonomy 
+```
+##### No. observations: 2630
+##### Total read count: 17263282
 
-Num observations: 2630
-Total count: 17263282
-
-16S:
+#### 16S:
+```
 biom add-metadata -i 16S_v_10.biom --observation-metadata-fp rdp_assigned_taxonomy/16S_v_nochimera_tax_assignments.txt -o 16S_otu_table_v_10_tax.biom --sc-separated taxonomy --observation-header OTUID,taxonomy
 
 filter_otus_from_otu_table.py -i 16S_otu_table_v_10_tax.biom -o 16S_otu_pynast.biom -e pynast_aligned_seqs/16S_v_nochimera_failures.fasta
+```
 
-Num observations: 7739
-Total count: 20446149
+##### No. observations: 7739
+##### Total read count: 20446149
 
-ITS1 - Remove reads with an assignments other than the kingdom fungi and reads without taxonomic assignment
+#### ITS1 - Remove reads with an assignments other than the kingdom fungi and reads without taxonomic assignment:
+```
 filter_taxa_from_otu_table.py -i otu_v_10.biom -o otu_v_10_2.biom -n k__Protista 
 
 filter_taxa_from_otu_table.py -i otu_v_10_2.biom -o otu_v_10_3.biom -n "No blast hit" 
+```
+##### No. observations: 1867
+##### Total read count: 15276438
 
-Num observations: 1867
-Total count: 15276438
-
-16S:
+#### 16S - Remove plant organellar and Archaea sequences and reads without taxonomic assignment:
+```
 filter_taxa_from_otu_table.py -i 16S_otu_pynast.biom -o 16S_all.biom -n D_2__Chloroplast,D_4__mitochondria,D_0__Archaea &
 
 filter_taxa_from_otu_table.py -i 16S_all.biom -o 16S_all.biom -n "Unclassified" &
+```
 
-Num observations: 6704
-Total count: 16809660
+##### No. observations: 6704
+##### Total read count: 16809660
 
 
-ITS1 and 16S - Split into different sample types (needle, root or soil), remove singletons after
+### ITS1 and 16S - Split into different sample types (needle, root or soil), remove singletons after:
+```
 filter_samples_from_otu_table.py -i otu_v_10_3.biom -o needle_v_10.biom -m all_tissue_map.txt -s 'SampleType:needle' 
 
-
 filter_otus_from_otu_table.py -i needle_v_10.biom -o needle_v_10_1.biom -n 1
-Num samples: 108
-Num observations: 1191
-Total count: 3036165
+```
 
+##### Needle ITS1 
+##### No. samples: 108
+##### No. observations: 1191
+##### Total read count: 3036165
+
+```
 filter_samples_from_otu_table.py -i otu_v_10_3.biom -o soil_v_10.biom -m all_tissue_map.txt -s 'SampleType:soil'
+```
 
-after –n 1:
-Num samples: 108
-Num observations: 844
-Total count: 5968902
+##### after –n 1:
+##### Soil ITS1 
+##### No. samples: 108
+##### No. observations: 844
+##### Total read count: 5968902
 
+```
 filter_samples_from_otu_table.py -i otu_v_10_3.biom -o root_v_10.biom -m all_tissue_map.txt -s 'SampleType:root'
+```
+##### after –n 1:
+##### Root ITS1 
+##### No. samples: 108
+##### No. observations: 691
+##### Total read count: 6112784
 
-after –n 1:
-Num samples: 108
-Num observations: 691
-Total count: 6112784
-
-16SSoil:
-Num observations: 5331
-Total count: 7040923
+##### 16SSoil:
+##### No. observations: 5331
+##### Total read count: 7040923
 
 16SNeedle:
 Num observations: 1009
