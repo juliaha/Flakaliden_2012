@@ -254,51 +254,57 @@ filter_samples_from_otu_table.py -i otu_v_10_3.biom -o root_v_10.biom -m all_tis
 ##### No. observations: 691
 ##### Total read count: 6112784
 
-##### 16SSoil:
+##### 16S Soil:
 ##### No. observations: 5331
 ##### Total read count: 7040923
 
-16SNeedle:
-Num observations: 1009
-Total count: 1202870
+##### 16S Needle:
+##### No. observations: 1009
+##### Total read count: 1202870
 
-16SRoot:
-Num observations: 3891
-Total count: 7946020
+##### 16S Root:
+##### No. observations: 3891
+##### Total read count: 7946020
 
-
-Restrict to 0.005% abundance per sample type:
-For ITSneedles (151 reads of 3036165)
-For ITSsoil (298 reads of 5968902)
-For ITSroots (305 reads of 6112784)
-
+### Restrict to 0.005% abundance per sample type:
+#### For ITS1 needles (at least 151 reads of 3036165)
+#### For ITS1 soil (at least 298 reads of 5968902)
+#### For ITS1 roots (at least 305 reads of 6112784)
+```
 filter_otus_from_otu_table.py -i #tissue#_v_10_1.biom -o #tissue#_v_10_000005.biom --min_count_fraction 0.00005
+```
 
-soil:
-Num observations: 360
-Total count: 5930724=99%
-Needle:
-Num observations: 407
-Total count: 3001175=98.8%
-Root:
-Num observations: 311
-Total count: 6081910=99%
+##### Soil ITS1 
+##### No. observations: 360
+##### Total read count: 5930724 
 
-16Ssoil:
-Num observations: 1579
-Total count: 6740639=95.7%
+##### Needle ITS1 
+##### No. observations: 407
+##### Total read count: 3001175
 
-16SNeedle:98.8%
-Num observations: 408
-Total count: 1188901
+##### Root ITS1 
+##### No.  observations: 311
+##### Total read count: 6081910
 
-16SRoot:
-Num observations: 1240
-Total count: 7704727=96.9%
+##### 16S soil:
+##### No. observations: 1579
+##### Total read count: 6740639
 
+##### 16S Needle:
+##### No. observations: 408
+##### Total read count: 1188901
 
+##### 16S Root:
+##### No. observations: 1240
+##### Total read count: 7704727
 
-combine technical replicates 
+### Combine technical replicates:
+```
 collapse_samples.py -b #tissue#.biom -m map.txt --output_biom_fp #tissue#bioreps.biom --output_mapping_fp bioreps_map.txt --collapse_fields SampleType,Treatment,Date,SoilPlot &
-rarefy:
+```
+
+### Rarefy ITS1/16S (39000/16500):
+```
 single_rarefaction.py -i #tissue#bioreps.biom -o #tissue#_obs_39000.biom -d 39000 &
+```
+### Continue with analysis in R
